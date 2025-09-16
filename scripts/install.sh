@@ -4,7 +4,7 @@ set -e
 
 # Function to get the latest release tag from GitHub
 get_latest_release() {
-  curl --silent "https://api.github.com/repos/NethermindEth/sedge/releases/latest" |   # Get latest release from GitHub API
+  curl --silent "https://api.github.com/repos/FlowForge-sh/sedge/releases/latest" |   # Get latest release from GitHub API
     grep '"tag_name":' |                                                              # Get tag line
     sed -E 's/.*"([^"]+)".*/\1/'                                                      # Extract version number
 }
@@ -38,7 +38,7 @@ echo "Latest version is $VERSION"
 
 # Construct the download URL
 BINARY_NAME="sedge-${VERSION}-${PLATFORM}-${ARCH}"
-DOWNLOAD_URL="https://github.com/NethermindEth/sedge/releases/download/${VERSION}/${BINARY_NAME}"
+DOWNLOAD_URL="https://github.com/FlowForge-sh/sedge/releases/download/${VERSION}/${BINARY_NAME}"
 
 # Download the binary
 echo "Downloading ${BINARY_NAME} from ${DOWNLOAD_URL}..."
