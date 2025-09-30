@@ -17,6 +17,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -57,7 +58,17 @@ func LogsCmd(composeManager compose.ComposeManager, cmdRunner commands.CommandRu
 				return err
 			}
 
-			file := filepath.Join(generationPath, configs.DefaultDockerComposeScriptName)
+			// Build list of compose files
+			composePath := filepath.Join(generationPath, configs.DefaultDockerComposeScriptName)
+			composePaths := []string{composePath}
+			
+			// Check for docker-compose.override.yml and include it if it exists
+			overridePath := filepath.Join(generationPath, "docker-compose.override.yml")
+			if _, err := os.Stat(overridePath); err == nil {
+				log.Infof("Found docker-compose.override.yml, including it in the compose operation")
+				composePaths = append(composePaths, overridePath)
+			}
+
 			// Get logs from docker compose script services
 			services := strings.Split(rawServices, "\n")
 			// Remove empty string resulting of spliting the last blank line of rawServices
@@ -67,7 +78,7 @@ func LogsCmd(composeManager compose.ComposeManager, cmdRunner commands.CommandRu
 			}
 
 			err = composeManager.Logs(commands.DockerComposeLogsOptions{
-				Path:     file,
+				Paths:    composePaths,
 				Services: services,
 				Follow:   tail == 0,
 				Tail:     tail,
