@@ -17,6 +17,7 @@ package actions
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/NethermindEth/sedge/configs"
@@ -32,8 +33,20 @@ type SetupContainersOptions struct {
 
 func (s *sedgeActions) SetupContainers(options SetupContainersOptions) error {
 	log.Info("Setting up containers")
+	
+	// Build list of compose files
+	composePath := filepath.Join(options.GenerationPath, configs.DefaultDockerComposeScriptName)
+	composePaths := []string{composePath}
+	
+	// Check for docker-compose.override.yml and include it if it exists
+	overridePath := filepath.Join(options.GenerationPath, "docker-compose.override.yml")
+	if _, err := os.Stat(overridePath); err == nil {
+		log.Infof("Found docker-compose.override.yml, including it in the compose operation")
+		composePaths = append(composePaths, overridePath)
+	}
+	
 	err := s.composeManager.Build(commands.DockerComposeBuildOptions{
-		Path:     filepath.Join(options.GenerationPath, configs.DefaultDockerComposeScriptName),
+		Paths:    composePaths,
 		Services: options.Services,
 	})
 	if err != nil {
@@ -41,7 +54,7 @@ func (s *sedgeActions) SetupContainers(options SetupContainersOptions) error {
 	}
 	if !options.SkipPull {
 		err := s.composeManager.Pull(commands.DockerComposePullOptions{
-			Path:     filepath.Join(options.GenerationPath, configs.DefaultDockerComposeScriptName),
+			Paths:    composePaths,
 			Services: options.Services,
 		})
 		if err != nil {
@@ -51,7 +64,7 @@ func (s *sedgeActions) SetupContainers(options SetupContainersOptions) error {
 		log.Warn("Skipping 'docker compose pull' step")
 	}
 	err = s.composeManager.Create(commands.DockerComposeCreateOptions{
-		Path:     filepath.Join(options.GenerationPath, configs.DefaultDockerComposeScriptName),
+		Paths:    composePaths,
 		Services: options.Services,
 	})
 	if err != nil {

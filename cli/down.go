@@ -17,6 +17,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/NethermindEth/sedge/cli/actions"
@@ -50,8 +51,19 @@ func DownCmd(composeManager compose.ComposeManager, cmdRunner commands.CommandRu
 				return err
 			}
 
+			// Build list of compose files
+			composePath := filepath.Join(generationPath, configs.DefaultDockerComposeScriptName)
+			composePaths := []string{composePath}
+			
+			// Check for docker-compose.override.yml and include it if it exists
+			overridePath := filepath.Join(generationPath, "docker-compose.override.yml")
+			if _, err := os.Stat(overridePath); err == nil {
+				log.Infof("Found docker-compose.override.yml, including it in the compose operation")
+				composePaths = append(composePaths, overridePath)
+			}
+
 			err := composeManager.Down(commands.DockerComposeDownOptions{
-				Path: filepath.Join(generationPath, configs.DefaultDockerComposeScriptName),
+				Paths: composePaths,
 			})
 			if err != nil {
 				return fmt.Errorf("error shutting down contaiers %w", err)

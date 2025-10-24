@@ -17,10 +17,12 @@ package actions
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/NethermindEth/sedge/configs"
 	"github.com/NethermindEth/sedge/internal/pkg/commands"
+	log "github.com/sirupsen/logrus"
 )
 
 type RunContainersOptions struct {
@@ -30,8 +32,19 @@ type RunContainersOptions struct {
 }
 
 func (s *sedgeActions) RunContainers(options RunContainersOptions) error {
+	// Build list of compose files
+	composePath := filepath.Join(options.GenerationPath, configs.DefaultDockerComposeScriptName)
+	composePaths := []string{composePath}
+	
+	// Check for docker-compose.override.yml and include it if it exists
+	overridePath := filepath.Join(options.GenerationPath, "docker-compose.override.yml")
+	if _, err := os.Stat(overridePath); err == nil {
+		log.Infof("Found docker-compose.override.yml, including it in the compose operation")
+		composePaths = append(composePaths, overridePath)
+	}
+	
 	err := s.composeManager.Up(commands.DockerComposeUpOptions{
-		Path:     filepath.Join(options.GenerationPath, configs.DefaultDockerComposeScriptName),
+		Paths:    composePaths,
 		Services: options.Services,
 	})
 	if err != nil {
@@ -40,7 +53,7 @@ func (s *sedgeActions) RunContainers(options RunContainersOptions) error {
 	if !options.SkipDockerPs {
 		// Run docker compose ps --filter status=running to show script running containers
 		_, err := s.composeManager.PS(commands.DockerComposePsOptions{
-			Path:          filepath.Join(options.GenerationPath, configs.DefaultDockerComposeScriptName),
+			Paths:         composePaths,
 			FilterRunning: true,
 		})
 		if err != nil {

@@ -35,8 +35,23 @@ func NewCMDRunner(options CMDRunnerOptions) CommandRunner {
 	}
 }
 
+// buildComposeFileFlags builds the -f flags for docker compose commands.
+// If paths is provided, it uses those; otherwise it falls back to path.
+func buildComposeFileFlags(path string, paths []string) string {
+	var flags string
+	if len(paths) > 0 {
+		for _, p := range paths {
+			flags += fmt.Sprintf("-f %s ", p)
+		}
+	} else if path != "" {
+		flags = fmt.Sprintf("-f %s ", path)
+	}
+	return flags
+}
+
 func (cr *UnixCMDRunner) BuildDockerComposeUpCMD(options DockerComposeUpOptions) Command {
-	command := fmt.Sprintf("docker compose -f %s up -d", options.Path)
+	fileFlags := buildComposeFileFlags(options.Path, options.Paths)
+	command := fmt.Sprintf("docker compose %sup -d", fileFlags)
 	if len(options.Services) > 0 {
 		command += " " + strings.Join(options.Services, " ")
 	}
@@ -44,7 +59,8 @@ func (cr *UnixCMDRunner) BuildDockerComposeUpCMD(options DockerComposeUpOptions)
 }
 
 func (cr *UnixCMDRunner) BuildDockerComposePullCMD(options DockerComposePullOptions) Command {
-	command := fmt.Sprintf("docker compose -f %s pull", options.Path)
+	fileFlags := buildComposeFileFlags(options.Path, options.Paths)
+	command := fmt.Sprintf("docker compose %spull", fileFlags)
 	if len(options.Services) > 0 {
 		command += " " + strings.Join(options.Services, " ")
 	}
@@ -52,7 +68,8 @@ func (cr *UnixCMDRunner) BuildDockerComposePullCMD(options DockerComposePullOpti
 }
 
 func (cr *UnixCMDRunner) BuildDockerComposeCreateCMD(options DockerComposeCreateOptions) Command {
-	command := fmt.Sprintf("docker compose -f %s create", options.Path)
+	fileFlags := buildComposeFileFlags(options.Path, options.Paths)
+	command := fmt.Sprintf("docker compose %screate", fileFlags)
 	if len(options.Services) > 0 {
 		command += " " + strings.Join(options.Services, " ")
 	}
@@ -60,7 +77,8 @@ func (cr *UnixCMDRunner) BuildDockerComposeCreateCMD(options DockerComposeCreate
 }
 
 func (cr *UnixCMDRunner) BuildDockerComposeBuildCMD(options DockerComposeBuildOptions) Command {
-	command := fmt.Sprintf("docker compose -f %s build", options.Path)
+	fileFlags := buildComposeFileFlags(options.Path, options.Paths)
+	command := fmt.Sprintf("docker compose %sbuild", fileFlags)
 	if len(options.Services) > 0 {
 		command += " " + strings.Join(options.Services, " ")
 	}
@@ -97,9 +115,10 @@ func (cr *UnixCMDRunner) BuildDockerComposePSCMD(options DockerComposePsOptions)
 		name += " " + options.ServiceName
 	}
 
+	fileFlags := buildComposeFileFlags(options.Path, options.Paths)
 	var command string
-	if options.Path != "" {
-		command = fmt.Sprintf("docker compose -f %s ps%s%s", options.Path, flags, name)
+	if fileFlags != "" {
+		command = fmt.Sprintf("docker compose %sps%s%s", fileFlags, flags, name)
 	} else {
 		command = fmt.Sprintf("docker compose ps%s%s", flags, name)
 	}
@@ -107,7 +126,8 @@ func (cr *UnixCMDRunner) BuildDockerComposePSCMD(options DockerComposePsOptions)
 }
 
 func (cr *UnixCMDRunner) BuildDockerComposeLogsCMD(options DockerComposeLogsOptions) Command {
-	command := fmt.Sprintf("docker compose -f %s logs", options.Path)
+	fileFlags := buildComposeFileFlags(options.Path, options.Paths)
+	command := fmt.Sprintf("docker compose %slogs", fileFlags)
 	servs := strings.Join(options.Services, " ")
 	if options.Follow {
 		log.Debug(`Command "docker compose logs" built with "--follow" flag.`)
@@ -158,7 +178,8 @@ func (cr *UnixCMDRunner) BuildDockerInspectCMD(options DockerInspectOptions) Com
 }
 
 func (cr *UnixCMDRunner) BuildDockerComposeDownCMD(options DockerComposeDownOptions) Command {
-	command := fmt.Sprintf("docker compose -f %s down", options.Path)
+	fileFlags := buildComposeFileFlags(options.Path, options.Paths)
+	command := fmt.Sprintf("docker compose %sdown", fileFlags)
 	return Command{Cmd: command}
 }
 
